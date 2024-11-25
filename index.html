@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Map</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100%;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="colorCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById('colorCanvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const width = canvas.width;
+        const height = canvas.height;
+
+        const clusterColors = generateClusterColors(12);
+        const pixelStates = Array.from({ length: width * height }, (_, index) => {
+            return {
+                color: randomColor(),
+                cluster: Math.floor(Math.random() * clusterColors.length),
+            };
+        });
+
+        function generateClusterColors(count) {
+            return Array.from({ length: count }, () => randomColor());
+        }
+
+        function randomColor() {
+            return {
+                r: Math.random() * 255,
+                g: Math.random() * 255,
+                b: Math.random() * 255
+            };
+        }
+
+        function lerp(start, end, t) {
+            return start + (end - start) * t;
+        }
+
+        function updatePixelStates() {
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const index = y * width + x;
+                    const pixel = pixelStates[index];
+
+                    // Influence from neighbors
+                    const neighbors = getNeighborIndices(x, y);
+                    const neighborClusters = neighbors.map(i => pixelStates[i]?.cluster).filter(c => c !== undefined);
+
+                    if (neighborClusters.length > 0) {
+                        const mostCommonCluster = getMostCommonElement(neighborClusters);
+                        if (Math.random() < 0.1) {
+                            pixel.cluster = mostCommonCluster;
+                        }
+                    }
+
+                    // Smooth transition towards cluster color
+                    const targetColor = clusterColors[pixel.cluster];
+                    pixel.color = {
+                        r: lerp(pixel.color.r, targetColor.r, 0.1),
+                        g: lerp(pixel.color.g, targetColor.g, 0.1),
+                        b: lerp(pixel.color.b, targetColor.b, 0.1)
+                    };
+                }
+            }
+        }
+
+        function getNeighborIndices(x, y) {
+            const indices = [];
+            if (x > 0) indices.push(y * width + (x - 1));
+            if (x < width - 1) indices.push(y * width + (x + 1));
+            if (y > 0) indices.push((y - 1) * width + x);
+            if (y < height - 1) indices.push((y + 1) * width + x);
+            return indices;
+        }
+
+        function getMostCommonElement(arr) {
+            const frequency = {};
+            arr.forEach(value => frequency[value] = (frequency[value] || 0) + 1);
+            return Object.keys(frequency).reduce((a, b) => frequency[a] > frequency[b] ? a : b);
+        }
+
+        function draw() {
+            const imageData = ctx.createImageData(width, height);
+            const data = imageData.data;
+
+            pixelStates.forEach((pixel, i) => {
+                const { r, g, b } = pixel.color;
+                const index = i * 4;
+                data[index] = r;
+                data[index + 1] = g;
+                data[index + 2] = b;
+                data[index + 3] = 255; // Alpha
+            });
+
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        function animate() {
+            updatePixelStates();
+            draw();
+
+            // Gradually reduce cluster diversity
+            if (Math.random() < 0.001) {
+                const dominantCluster = Math.floor(Math.random() * clusterColors.length);
+                clusterColors.forEach((_, index) => {
+                    if (index !== dominantCluster) {
+                        clusterColors[index] = clusterColors[dominantCluster];
+                    }
+                });
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        animate();
+    </script>
+</body>
+</html>
