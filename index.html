@@ -10,9 +10,12 @@
             padding: 0;
             overflow: hidden;
             height: 100%;
+            background-color: white;
         }
         canvas {
             display: block;
+            margin: 50px;
+            box-sizing: border-box;
         }
     </style>
 </head>
@@ -22,8 +25,8 @@
         const canvas = document.getElementById('colorCanvas');
         const ctx = canvas.getContext('2d');
 
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        canvas.width = window.innerWidth - 100; // Adjust for padding
+        canvas.height = window.innerHeight - 100; // Adjust for padding
 
         const width = canvas.width;
         const height = canvas.height;
@@ -129,8 +132,8 @@
         }
 
         window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            canvas.width = window.innerWidth - 100; // Adjust for padding
+            canvas.height = window.innerHeight - 100; // Adjust for padding
         });
 
         animate();
